@@ -1,0 +1,129 @@
+[jetzt.html](https://github.com/user-attachments/files/22707289/jetzt.html)
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Interaktives Glücksrad</title>
+<style>
+  body { font-family: sans-serif; text-align: center; background: #f0f0f0; }
+  canvas { background: white; margin-top: 20px; cursor: pointer; }
+  button.color-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    margin: 2px;
+    cursor: pointer;
+  }
+  button.spin-btn {
+    margin-top: 10px; padding: 10px 20px; font-size: 16px; cursor: pointer;
+  }
+  #colorPickers { margin-top: 10px; }
+</style>
+</head>
+<body>
+<h1>Gestalte dein Glücksrad!</h1>
+<canvas id="wheel" width="400" height="400"></canvas>
+<div id="colorPickers"></div>
+<button class="spin-btn" onclick="spinWheel()">Rad drehen!</button>
+
+<script>
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+
+const sections = 8;
+let colors = Array(sections).fill('#cccccc'); // Startfarbe grau
+const centerX = canvas.width/2;
+const centerY = canvas.height/2;
+const radius = 150;
+let angleOffset = 0;
+
+// Vorgabe-Farben
+const presetColors = [
+  {name: 'Blau', value: '#007bff'},
+  {name: 'Rot', value: '#ff0000'},
+  {name: 'Grün', value: '#28a745'},
+  {name: 'Gelb', value: '#ffc107'}
+];
+
+// Rad zeichnen
+function drawWheel() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const arc = 2*Math.PI/sections;
+  for(let i=0;i<sections;i++){
+    ctx.beginPath();
+    // Abschnittsnummerierung: Abschnitt 0 = oben unter Zeiger
+    const startAngle = -Math.PI/2 + i*arc + angleOffset;
+    const endAngle = -Math.PI/2 + (i+1)*arc + angleOffset;
+    ctx.moveTo(centerX, centerY);
+    ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+    ctx.closePath();
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Mittelpunkt
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, 10, 0, 2*Math.PI);
+  ctx.fillStyle = '#000';
+  ctx.fill();
+
+  // Zeiger oben, Spitze nach unten
+  ctx.beginPath();
+  ctx.moveTo(centerX, centerY - radius + 10);
+  ctx.lineTo(centerX - 10, centerY - radius - 20);
+  ctx.lineTo(centerX + 10, centerY - radius - 20);
+  ctx.closePath();
+  ctx.fillStyle = 'black';
+  ctx.fill();
+}
+
+// Klick auf Rad
+canvas.addEventListener('click', function(event){
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left - centerX;
+  const y = event.clientY - rect.top - centerY;
+  let clickAngle = Math.atan2(y, x) + Math.PI/2; // 0 = oben
+  if(clickAngle < 0) clickAngle += 2*Math.PI;
+  const arc = 2*Math.PI/sections;
+  const sectionIndex = Math.floor(clickAngle/arc);
+  showColorOptions(sectionIndex);
+});
+
+// Farbauswahl direkt für Abschnitt
+function showColorOptions(section) {
+  const container = document.getElementById('colorPickers');
+  container.innerHTML = `Abschnitt ${section+1} Farbe wählen: `;
+  presetColors.forEach(c=>{
+    const btn = document.createElement('button');
+    btn.className = 'color-btn';
+    btn.style.backgroundColor = c.value;
+    btn.title = c.name;
+    btn.onclick = ()=>{ colors[section] = c.value; drawWheel(); container.innerHTML=''; };
+    container.appendChild(btn);
+  });
+}
+
+// Rad drehen
+function spinWheel() {
+  const spins = Math.floor(Math.random()*10 + 5);
+  const totalAngle = spins*2*Math.PI + Math.random()*2*Math.PI;
+  const duration = 3000;
+  const start = performance.now();
+  function animate(time){
+    const elapsed = time - start;
+    const progress = Math.min(elapsed/duration,1);
+    angleOffset = totalAngle * easeOut(progress);
+    drawWheel();
+    if(progress<1) requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+}
+
+function easeOut(t){ return 1 - Math.pow(1-t,3); }
+
+drawWheel();
+</script>
+</body>
+</html>
